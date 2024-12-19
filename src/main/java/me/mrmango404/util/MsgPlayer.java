@@ -27,7 +27,7 @@ public class MsgPlayer {
 	 * Receive a message field then send color code translated message to the player.
 	 *
 	 * @param player       Target player.
-	 * @param messageField Which message in message.yml should the plugin send.
+	 * @param messageField Which message in en_us.yml should the plugin send.
 	 */
 	public static void send(Player player, MESSAGE_FIELD messageField) {
 

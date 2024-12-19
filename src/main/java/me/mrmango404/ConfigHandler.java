@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.util.List;
 
 public class ConfigHandler {
-
 	// Config overall settings
 	public static int VIEW_RANGE;
 	public static long VIEW_SESSION_DURATION;
@@ -16,10 +15,10 @@ public class ConfigHandler {
 	public static List<String> CONTAINERS;
 	public static List<String> COLORS;
 	public static boolean DEBUG;
+	public static String LANGUAGE;
 
 	// Config sound settings
 	public final static class Sound {
-
 		public static boolean ENABLE;
 		public static String OPEN_SOUND;
 		public static String CLOSE_SOUND;
@@ -27,14 +26,12 @@ public class ConfigHandler {
 
 	// Config permission settings
 	public final static class Permission {
-
 		public static String USE;
 		public static String RELOAD;
 	}
 
 	// Overall Messages
 	public final static class Msg {
-
 		public static String PREFIX;
 		public static String GUI_TITLE;
 		public static String CHAT_ICON_SINGLE;
@@ -57,61 +54,108 @@ public class ConfigHandler {
 	}
 
 	public static void load() {
-
 		Main mainClass = Main.getMain();
 		String configPath = "config.yml";
-		String msgPath = "message.yml";
 		File configFile = new File(mainClass.getDataFolder(), configPath);
-		File msgFile = new File(mainClass.getDataFolder(), msgPath);
 
+		// Create config.yml if it doesn't exist
 		if (!configFile.exists()) {
 			mainClass.saveResource(configPath, false);
 		}
 
-		if (!msgFile.exists()) {
-			mainClass.saveResource(msgPath, false);
-		}
-
-		YamlConfiguration msg = YamlConfiguration.loadConfiguration(msgFile);
+		// Load config.yml
 		YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
-		YamlConfiguration defaultMsg = YamlConfiguration.loadConfiguration(new InputStreamReader(mainClass.getResource(msgPath)));
-		YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(mainClass.getResource(configPath)));
-
+		YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(
+				new InputStreamReader(mainClass.getResource(configPath))
+		);
 		config.addDefaults(defaultConfig);
-		msg.addDefaults(defaultMsg);
 
+		loadConfigSettings(config);
+		loadLanguageFile(mainClass);
+	}
+
+	private static void loadConfigSettings(YamlConfiguration config) {
 		VIEW_RANGE = config.getInt("view_range");
 		VIEW_SESSION_DURATION = config.getLong("view_session_duration");
 		GUI_AUTO_CLOSE = config.getBoolean("gui_auto_close");
 		CONTAINERS = config.getStringList("containers");
 		COLORS = config.getStringList("colors");
 		DEBUG = config.getBoolean("debug");
+		// Default to en_us if not specified
+		LANGUAGE = config.getString("language", "en_us");
+
 		Sound.ENABLE = config.getBoolean("sound.enable");
 		Sound.OPEN_SOUND = config.getString("sound.open_sound");
 		Sound.CLOSE_SOUND = config.getString("sound.close_sound");
 		Permission.USE = config.getString("permissions.use");
 		Permission.RELOAD = config.getString("permissions.reload");
-		Msg.PREFIX = msg.getString("prefix");
-		Msg.GUI_TITLE = msg.getString("gui_title");
-		Msg.CHAT_ICON_SINGLE = msg.getString("chat.icon_single");
-		Msg.CHAT_ICON_DOUBLE = msg.getString("chat.icon_double");
-		Msg.CHAT_BODY = msg.getString("chat.body");
-		Msg.CHAT_CLICKABLE = msg.getString("chat.clickable");
-		Msg.CHAT_HOVER = msg.getString("chat.hover");
-		Msg.END_BODY = msg.getString("end.body");
-		Msg.END_CLICKABLE = msg.getString("end.clickable");
-		Msg.END_HOVER = msg.getString("end.hover");
-		Msg.ENABLED = msg.getString("enabled");
-		Msg.DISABLED = msg.getString("disabled");
-		Msg.NOT_ENABLED = msg.getString("not_enabled");
-		Msg.NOT_VIEWABLE = msg.getString("not_viewable");
-		Msg.NOT_FOUND = msg.getString("not_found");
-		Msg.NO_PERMISSION = msg.getString("no_permission");
-		Msg.UNKNOWN_USAGE = msg.getString("unknown_usage");
-		Msg.RELOADED = msg.getString("reloaded");
-		Msg.HELP = msg.getStringList("help");
+	}
 
-		// Debug Section
+	private static void loadLanguageFile(Main mainClass) {
+		// Create lang directory if it doesn't exist
+		File langDir = new File(mainClass.getDataFolder(), "lang");
+		if (!langDir.exists()) {
+			langDir.mkdir();
+		}
+
+		// Define language file path
+		String langFileName = LANGUAGE + ".yml";
+		File langFile = new File(langDir, langFileName);
+
+		// Copy default language files from resources if they don't exist
+		if (!langFile.exists()) {
+			try {
+				mainClass.saveResource("lang/" + langFileName, false);
+			} catch (IllegalArgumentException e) {
+				// If the requested language file doesn't exist in resources, fall back to en_us
+				mainClass.getLogger().warning("Language file " + langFileName + " not found. Falling back to en_us.yml");
+				LANGUAGE = "en_us";
+				langFileName = "en_us.yml";
+				langFile = new File(langDir, langFileName);
+				if (!langFile.exists()) {
+					mainClass.saveResource("lang/" + langFileName, false);
+				}
+			}
+		}
+
+		// Load the language file
+		YamlConfiguration lang = YamlConfiguration.loadConfiguration(langFile);
+		YamlConfiguration defaultLang = YamlConfiguration.loadConfiguration(
+				new InputStreamReader(mainClass.getResource("lang/" + langFileName))
+		);
+		lang.addDefaults(defaultLang);
+
+		// Load all message settings
+		loadMessageSettings(lang);
+
+		// Debug logging
+		logDebugInfo();
+	}
+
+	private static void loadMessageSettings(YamlConfiguration lang) {
+		Msg.PREFIX = lang.getString("prefix");
+		Msg.GUI_TITLE = lang.getString("gui_title");
+		Msg.CHAT_ICON_SINGLE = lang.getString("chat.icon_single");
+		Msg.CHAT_ICON_DOUBLE = lang.getString("chat.icon_double");
+		Msg.CHAT_BODY = lang.getString("chat.body");
+		Msg.CHAT_CLICKABLE = lang.getString("chat.clickable");
+		Msg.CHAT_HOVER = lang.getString("chat.hover");
+		Msg.END_BODY = lang.getString("end.body");
+		Msg.END_CLICKABLE = lang.getString("end.clickable");
+		Msg.END_HOVER = lang.getString("end.hover");
+		Msg.ENABLED = lang.getString("enabled");
+		Msg.DISABLED = lang.getString("disabled");
+		Msg.NOT_ENABLED = lang.getString("not_enabled");
+		Msg.NOT_VIEWABLE = lang.getString("not_viewable");
+		Msg.NOT_FOUND = lang.getString("not_found");
+		Msg.NO_PERMISSION = lang.getString("no_permission");
+		Msg.UNKNOWN_USAGE = lang.getString("unknown_usage");
+		Msg.RELOADED = lang.getString("reloaded");
+		Msg.HELP = lang.getStringList("help");
+	}
+
+	private static void logDebugInfo() {
+		DebugManager.log("LANGUAGE: " + LANGUAGE);
 		DebugManager.log("VIEW_RANGE: " + VIEW_RANGE);
 		DebugManager.log("VIEW_SESSION_DURATION: " + VIEW_SESSION_DURATION);
 		DebugManager.log("GUI_AUTO_CLOSE: " + GUI_AUTO_CLOSE);

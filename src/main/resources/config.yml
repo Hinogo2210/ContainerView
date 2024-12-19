@@ -1,3 +1,7 @@
+# Language to be used, if you do not know what you are doing, leave this as en_us.
+# If you wish to modify an existing language, duplicate it to "custom.yml" and set this value to "custom"
+language: en_us
+
 # Based on the player's location and specified half-width (int range),
 # this function returns a list of blocks within the cuboid-shaped area centered on the player.
 # The cuboid extends from the player's position in all directions (x, y, z) by the specified range.
